@@ -38,6 +38,7 @@ defmodule PlugShopifyJWT.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
+      {:joken, "~> 2.0.0"},
       {:versioce, "~> 1.1.1", only: :dev, runtime: false},
       {:phoenix, "~> 1.5.4"},
       {:plug_cowboy, "~> 2.0"},
