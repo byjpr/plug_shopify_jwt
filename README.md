@@ -1,11 +1,13 @@
 # PlugShopifyJwt
 
-**TODO: Add description**
+[![Elixir CI](https://github.com/byjpr/plug_shopify_jwt/actions/workflows/elixir.yml/badge.svg)](https://github.com/byjpr/plug_shopify_jwt/actions/workflows/elixir.yml)
+[![Coverage Status](https://coveralls.io/repos/github/byjpr/plug_shopify_jwt/badge.svg?branch=main)](https://coveralls.io/github/byjpr/plug_shopify_jwt?branch=main)
+[![Libraries.io for releases](https://img.shields.io/librariesio/release/github/byjpr/plug_shopify_jwt.svg?style=flat-square)](https://libraries.io/github/byjpr/plug_shopify_jwt)
+
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `plug_shopify_jwt` to your list of dependencies in `mix.exs`:
+The package can be installed by adding `plug_shopify_jwt` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
@@ -14,8 +16,3 @@ def deps do
   ]
 end
 ```
-
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/plug_shopify_jwt](https://hexdocs.pm/plug_shopify_jwt).
-
