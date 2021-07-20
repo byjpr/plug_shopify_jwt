@@ -1,106 +1,80 @@
-defmodule PlugShopifyVerifyTimestampTest do
+defmodule PlugShopifyEmbeddedJWTAuthTest do
   @moduledoc """
-  Test the plug that verifies time difference supplied in URL Parameters by Shopify.
+  Test the plug that validate Shopify JWT.
   """
 
   use ExUnit.Case
   use Timex
   use Plug.Test
 
-  doctest PlugShopifyVerifyTimestamp
+  doctest PlugShopifyEmbeddedJWTAuth
 
   defp parse(conn, opts \\ []) do
     opts = Keyword.put_new(opts, :parsers, [Plug.Parsers.URLENCODED, Plug.Parsers.MULTIPART])
     Plug.Parsers.call(conn, Plug.Parsers.init(opts))
   end
 
-  test "halts connections without parameter" do
-    config = [max_delta: 5, halt_on_error: true]
+  test "config should set `HS256` as a default if not set" do
+    config = [secret: "asdnflajsfdnljasdf"]
+    init_conf = PlugShopifyEmbeddedJWTAuth.init(config)
 
-    conn =
-      conn(:get, "/new")
-      |> parse()
-      |> put_private(:shop_origin_type, :url)
-      |> PlugShopifyVerifyTimestamp.call(config)
-
-    assert conn.halted
+    assert init_conf[:algorithm] == "HS256"
   end
 
-  test "halts connections with time delay" do
-    config = [max_delta: 5, halt_on_error: true]
-    datetime = Timex.now() |> Timex.shift(seconds: -6) |> Timex.to_unix()
+  test "config should not modify secret content" do
+    config = [secret: "asdnflajsfdnljasdf"]
+    init_conf = PlugShopifyEmbeddedJWTAuth.init(config)
 
-    conn =
-      conn(:get, "/new?test_param=param&timestamp=#{datetime}")
-      |> parse()
-      |> put_private(:shop_origin_type, :url)
-      |> PlugShopifyVerifyTimestamp.call(config)
-
-    assert conn.halted
+    assert init_conf[:secret] == "asdnflajsfdnljasdf"
   end
 
-  test "1 second delay with a max delta of 5 should not be halted" do
-    config = [max_delta: 5, halt_on_error: true]
-    datetime = Timex.now() |> Timex.shift(seconds: -1) |> Timex.to_unix()
+  test "config should have Joken.Signer configured as we expect" do
+    config = [secret: "asdnflajsfdnljasdf"]
+    init_conf = PlugShopifyEmbeddedJWTAuth.init(config)
 
-    conn =
-      conn(:get, "/new?test_param=param&timestamp=#{datetime}")
-      |> parse()
-      |> put_private(:shop_origin_type, :url)
-      |> PlugShopifyVerifyTimestamp.call(config)
+    expected_signer = %Joken.Signer{
+      alg: "HS256",
+      jwk: %JOSE.JWK{
+        fields: %{},
+        keys: :undefined,
+        kty: {:jose_jwk_kty_oct, "asdnflajsfdnljasdf"}
+      },
+      jws: %JOSE.JWS{
+        alg: {:jose_jws_alg_hmac, :HS256},
+        b64: :undefined,
+        fields: %{"typ" => "JWT"}
+      }
+    }
 
-    refute conn.halted
+    assert init_conf[:signer] == expected_signer
   end
 
-  test "2 second delay with a max delta of 5 should not be halted" do
-    config = [max_delta: 5, halt_on_error: true]
-    datetime = Timex.now() |> Timex.shift(seconds: -2) |> Timex.to_unix()
+  test "strict match config" do
+    config = [secret: "asdnflajsfdnljasdf"]
+    init_conf = PlugShopifyEmbeddedJWTAuth.init(config)
 
-    conn =
-      conn(:get, "/new?test_param=param&timestamp=#{datetime}")
-      |> parse()
-      |> put_private(:shop_origin_type, :url)
-      |> PlugShopifyVerifyTimestamp.call(config)
-
-    refute conn.halted
+    assert init_conf == [
+             algorithm: "HS256",
+             secret: "asdnflajsfdnljasdf",
+             signer: %Joken.Signer{
+               alg: "HS256",
+               jwk: %JOSE.JWK{
+                 fields: %{},
+                 keys: :undefined,
+                 kty: {:jose_jwk_kty_oct, "asdnflajsfdnljasdf"}
+               },
+               jws: %JOSE.JWS{
+                 alg: {:jose_jws_alg_hmac, :HS256},
+                 b64: :undefined,
+                 fields: %{"typ" => "JWT"}
+               }
+             }
+           ]
   end
 
-  test "3 second delay with a max delta of 5 should not be halted" do
-    config = [max_delta: 5, halt_on_error: true]
-    datetime = Timex.now() |> Timex.shift(seconds: -3) |> Timex.to_unix()
-
-    conn =
-      conn(:get, "/new?test_param=param&timestamp=#{datetime}")
-      |> parse()
-      |> put_private(:shop_origin_type, :url)
-      |> PlugShopifyVerifyTimestamp.call(config)
-
-    refute conn.halted
-  end
-
-  test "4 second delay with a max delta of 5 should not be halted" do
-    config = [max_delta: 5, halt_on_error: true]
-    datetime = Timex.now() |> Timex.shift(seconds: -4) |> Timex.to_unix()
-
-    conn =
-      conn(:get, "/new?test_param=param&timestamp=#{datetime}")
-      |> parse()
-      |> put_private(:shop_origin_type, :url)
-      |> PlugShopifyVerifyTimestamp.call(config)
-
-    refute conn.halted
-  end
-
-  test "5 second delay with a max delta of 5 should be halted" do
-    config = [max_delta: 5, halt_on_error: true]
-    datetime = Timex.now() |> Timex.shift(seconds: -5) |> Timex.to_unix()
-
-    conn =
-      conn(:get, "/new?test_param=param&timestamp=#{datetime}")
-      |> parse()
-      |> put_private(:shop_origin_type, :url)
-      |> PlugShopifyVerifyTimestamp.call(config)
-
-    assert conn.halted
+  test "plug should raise without secret" do
+    assert_raise RuntimeError, fn ->
+      init_conf = PlugShopifyEmbeddedJWTAuth.init([])
+    end
   end
 end
