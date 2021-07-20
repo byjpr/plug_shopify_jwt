@@ -1,0 +1,39 @@
+use Mix.Config
+
+config :versioce,
+  files: ["README.md"],
+  global: false,
+  pre_hooks: [],
+  post_hooks: [Versioce.PostHooks.Changelog, Versioce.PostHooks.Git.Release]
+
+config :versioce, :git,
+  commit_message_template: ":rocket: Bump version to {version}",
+  tag_template: "v{version}",
+  tag_message_template: ":rocket: Release v{version}",
+  additional_files: ["CHANGELOG.md"]
+
+config :versioce, :changelog,
+  datagrabber: Versioce.Changelog.DataGrabber.Git,
+  anchors: %{
+    added: [
+      ":sparkles:",
+      ":bulb:",
+      ":art:",
+      ":construction_worker:",
+      ":white_check_mark:",
+      ":construction:"
+    ],
+    changed: [
+      ":recycle:",
+      ":children_crossing:",
+      ":wrench:",
+      ":hammer:",
+      ":pencil2:"
+    ],
+    deprecated: [":wastebasket:"],
+    removed: [":fire:", ":coffin:"],
+    fixed: [":bug:"],
+    security: [":rotating_light:"]
+  },
+  unanchored_section: :uncategorised,
+  git_origin: Mix.Project.config()[:source_url]
