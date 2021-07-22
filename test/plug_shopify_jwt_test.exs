@@ -14,67 +14,155 @@ defmodule PlugShopifyEmbeddedJWTAuthTest do
     Plug.Parsers.call(conn, Plug.Parsers.init(opts))
   end
 
-  test "config should set `HS256` as a default if not set" do
-    config = [secret: "asdnflajsfdnljasdf"]
-    init_conf = PlugShopifyEmbeddedJWTAuth.init(config)
+  describe "config" do
+    test "init should raise without secret set" do
+      assert_raise RuntimeError, fn ->
+        init_conf = PlugShopifyEmbeddedJWTAuth.init([])
+      end
+    end
 
-    assert init_conf[:algorithm] == "HS256"
-  end
+    test "init should set `algorithm: HS256` as a default if not set" do
+      init_conf = PlugShopifyEmbeddedJWTAuth.init(secret: "asdnflajsfdnljasdf")
 
-  test "config should not modify secret content" do
-    config = [secret: "asdnflajsfdnljasdf"]
-    init_conf = PlugShopifyEmbeddedJWTAuth.init(config)
+      assert init_conf[:algorithm] == "HS256"
+    end
 
-    assert init_conf[:secret] == "asdnflajsfdnljasdf"
-  end
+    test "init should set `halt_on_error: true` as a default if not set" do
+      init_conf = PlugShopifyEmbeddedJWTAuth.init(secret: "asdnflajsfdnljasdf")
 
-  test "config should have Joken.Signer configured as we expect" do
-    config = [secret: "asdnflajsfdnljasdf"]
-    init_conf = PlugShopifyEmbeddedJWTAuth.init(config)
+      assert init_conf[:halt_on_error] == true
+    end
 
-    expected_signer = %Joken.Signer{
-      alg: "HS256",
-      jwk: %JOSE.JWK{
-        fields: %{},
-        keys: :undefined,
-        kty: {:jose_jwk_kty_oct, "asdnflajsfdnljasdf"}
-      },
-      jws: %JOSE.JWS{
-        alg: {:jose_jws_alg_hmac, :HS256},
-        b64: :undefined,
-        fields: %{"typ" => "JWT"}
+    test "`halt_on_error` default should respect config" do
+      init_conf =
+        PlugShopifyEmbeddedJWTAuth.init(secret: "asdnflajsfdnljasdf", halt_on_error: false)
+
+      assert init_conf[:halt_on_error] == false
+    end
+
+    test "Secret should not be modified in anyway" do
+      init_conf = PlugShopifyEmbeddedJWTAuth.init(secret: "asdnflajsfdnljasdf")
+
+      assert init_conf[:secret] == "asdnflajsfdnljasdf"
+    end
+
+    test "Init should have Joken.Signer configured as we expect" do
+      init_conf = PlugShopifyEmbeddedJWTAuth.init(secret: "asdnflajsfdnljasdf")
+
+      expected_signer = %Joken.Signer{
+        alg: "HS256",
+        jwk: %JOSE.JWK{
+          fields: %{},
+          keys: :undefined,
+          kty: {:jose_jwk_kty_oct, "asdnflajsfdnljasdf"}
+        },
+        jws: %JOSE.JWS{
+          alg: {:jose_jws_alg_hmac, :HS256},
+          b64: :undefined,
+          fields: %{"typ" => "JWT"}
+        }
       }
-    }
 
-    assert init_conf[:signer] == expected_signer
+      assert init_conf[:signer] == expected_signer
+    end
+
+    test "strict match config" do
+      init_conf = PlugShopifyEmbeddedJWTAuth.init(secret: "asdnflajsfdnljasdf")
+
+      exppected_conf = [
+        algorithm: "HS256",
+        halt_on_error: true,
+        secret: "asdnflajsfdnljasdf",
+        signer: %Joken.Signer{
+          alg: "HS256",
+          jwk: %JOSE.JWK{
+            fields: %{},
+            keys: :undefined,
+            kty: {:jose_jwk_kty_oct, "asdnflajsfdnljasdf"}
+          },
+          jws: %JOSE.JWS{
+            alg: {:jose_jws_alg_hmac, :HS256},
+            b64: :undefined,
+            fields: %{"typ" => "JWT"}
+          }
+        }
+      ]
+
+      assert init_conf == exppected_conf
+    end
   end
 
-  test "strict match config" do
-    config = [secret: "asdnflajsfdnljasdf"]
-    init_conf = PlugShopifyEmbeddedJWTAuth.init(config)
+  describe "authentication" do
+    test "call with `shop_origin_type` not set should pass conn through and do nothing" do
+      init = PlugShopifyEmbeddedJWTAuth.init(secret: "asdnflajsfdnljasdf")
+      conn = conn(:get, "/new") |> parse() |> PlugShopifyEmbeddedJWTAuth.call(init)
 
-    assert init_conf == [
-             algorithm: "HS256",
-             secret: "asdnflajsfdnljasdf",
-             signer: %Joken.Signer{
-               alg: "HS256",
-               jwk: %JOSE.JWK{
-                 fields: %{},
-                 keys: :undefined,
-                 kty: {:jose_jwk_kty_oct, "asdnflajsfdnljasdf"}
-               },
-               jws: %JOSE.JWS{
-                 alg: {:jose_jws_alg_hmac, :HS256},
-                 b64: :undefined,
-                 fields: %{"typ" => "JWT"}
-               }
-             }
-           ]
-  end
+      refute conn.halted
+      refute Map.has_key?(conn.private, :shopify_jwt_claims)
+      refute Map.has_key?(conn.private, :current_shop_name)
+    end
 
-  test "plug should raise without secret" do
-    assert_raise RuntimeError, fn ->
-      init_conf = PlugShopifyEmbeddedJWTAuth.init([])
+    test "call with `shop_origin_type: :jwt`, and valid JWT headers should run with success" do
+      api_key = PlugShopifyEmbeddedJWTAuthTest.JWTHelper.api_key()
+      api_secret = PlugShopifyEmbeddedJWTAuthTest.JWTHelper.api_secret()
+      jwt = PlugShopifyEmbeddedJWTAuthTest.JWTHelper.valid_encoded_jwt_payload(:valid_signature)
+
+      init = PlugShopifyEmbeddedJWTAuth.init(secret: api_secret)
+
+      conn =
+        conn(:get, "/new")
+        |> parse()
+        |> put_private(:shop_origin_type, :jwt)
+        |> put_req_header(
+          "authorization",
+          "Bearer #{jwt}"
+        )
+        |> PlugShopifyEmbeddedJWTAuth.call(init)
+
+      refute conn.halted
+      assert Map.has_key?(conn.private, :shopify_jwt_claims)
+      assert Map.has_key?(conn.private, :current_shop_name)
+    end
+
+    test "invalid token should fail" do
+      api_secret = PlugShopifyEmbeddedJWTAuthTest.JWTHelper.api_secret()
+      init = PlugShopifyEmbeddedJWTAuth.init(secret: api_secret)
+
+      conn =
+        conn(:get, "/new")
+        |> parse()
+        |> put_private(:shop_origin_type, :jwt)
+        |> put_req_header(
+          "authorization",
+          "Bearer Q3L8aO4syyVlvXKsr4dqtO3u0yCDvWMX"
+        )
+        |> PlugShopifyEmbeddedJWTAuth.call(init)
+
+      assert conn.halted
+      refute Map.has_key?(conn.private, :shopify_jwt_claims)
+      refute Map.has_key?(conn.private, :current_shop_name)
+    end
+
+    test "token with mismatched signature should fail" do
+      api_secret = PlugShopifyEmbeddedJWTAuthTest.JWTHelper.api_secret()
+      init = PlugShopifyEmbeddedJWTAuth.init(secret: api_secret)
+
+      jwt =
+        PlugShopifyEmbeddedJWTAuthTest.JWTHelper.valid_encoded_jwt_payload(:mismatch_signature)
+
+      conn =
+        conn(:get, "/new")
+        |> parse()
+        |> put_private(:shop_origin_type, :jwt)
+        |> put_req_header(
+          "authorization",
+          "Bearer #{jwt}"
+        )
+        |> PlugShopifyEmbeddedJWTAuth.call(init)
+
+      assert conn.halted
+      refute Map.has_key?(conn.private, :shopify_jwt_claims)
+      refute Map.has_key?(conn.private, :current_shop_name)
     end
   end
 end
