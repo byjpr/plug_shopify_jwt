@@ -21,6 +21,10 @@ defmodule PlugShopifyEmbeddedJWTAuth do
 
   def call(conn, _), do: conn
 
+  @spec respond(
+          {:ok, nil | maybe_improper_list | map, Plug.Conn.t()}
+          | {:error, any, any, nil | keyword | map}
+        ) :: Plug.Conn.t()
   def respond({:ok, claims, conn}) do
     success(conn, claims)
   end
@@ -91,7 +95,7 @@ defmodule PlugShopifyEmbeddedJWTAuth do
     |> halt
   end
 
-  defp error(conn, false, reason) do
+  defp error(conn, false, _reason) do
     conn
     |> put_private(:ps_jwt_success, false)
   end
@@ -107,6 +111,8 @@ defmodule PlugShopifyEmbeddedJWTAuth do
 
   defp send_401(conn, reason) do
     conn
+    |> put_resp_content_type("application/json")
+    |> send_resp(401, Jason.encode!(reason))
   end
 
   # Plug setup
