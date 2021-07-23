@@ -220,6 +220,21 @@ defmodule PlugShopifyEmbeddedJWTAuthTest do
       refute Map.has_key?(conn.private, :shopify_jwt_claims)
       refute Map.has_key?(conn.private, :current_shop_name)
     end
+
+    test "missing authorization header" do
+      api_secret = PlugShopifyEmbeddedJWTAuthTest.JWTHelper.api_secret()
+      init = PlugShopifyEmbeddedJWTAuth.init(secret: api_secret)
+
+      conn =
+        conn(:get, "/new")
+        |> parse()
+        |> put_private(:shop_origin_type, :jwt)
+        |> PlugShopifyEmbeddedJWTAuth.call(init)
+
+      assert conn.halted
+      refute Map.has_key?(conn.private, :shopify_jwt_claims)
+      refute Map.has_key?(conn.private, :current_shop_name)
+    end
   end
 
   describe "authentication soft failures" do
@@ -350,6 +365,22 @@ defmodule PlugShopifyEmbeddedJWTAuthTest do
           "authorization",
           " "
         )
+        |> PlugShopifyEmbeddedJWTAuth.call(init)
+
+      refute conn.halted
+      refute Map.has_key?(conn.private, :shopify_jwt_claims)
+      refute Map.has_key?(conn.private, :current_shop_name)
+      assert conn.private[:ps_jwt_success] == false
+    end
+
+    test "missing authorization header should set :ps_jwt_success to false" do
+      api_secret = PlugShopifyEmbeddedJWTAuthTest.JWTHelper.api_secret()
+      init = PlugShopifyEmbeddedJWTAuth.init(secret: api_secret, halt_on_error: false)
+
+      conn =
+        conn(:get, "/new")
+        |> parse()
+        |> put_private(:shop_origin_type, :jwt)
         |> PlugShopifyEmbeddedJWTAuth.call(init)
 
       refute conn.halted
