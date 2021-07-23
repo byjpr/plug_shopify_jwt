@@ -1,5 +1,7 @@
 use Mix.Config
 
+config :phoenix, :json_library, Jason
+
 config :versioce,
   files: ["README.md"],
   global: false,
