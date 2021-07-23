@@ -17,7 +17,7 @@ defmodule PlugShopifyEmbeddedJWTAuthTest do
   describe "config" do
     test "init should raise without secret set" do
       assert_raise RuntimeError, fn ->
-        init_conf = PlugShopifyEmbeddedJWTAuth.init([])
+        PlugShopifyEmbeddedJWTAuth.init([])
       end
     end
 
@@ -103,7 +103,6 @@ defmodule PlugShopifyEmbeddedJWTAuthTest do
     end
 
     test "call with `shop_origin_type: :jwt`, and valid JWT headers should run with success" do
-      api_key = PlugShopifyEmbeddedJWTAuthTest.JWTHelper.api_key()
       api_secret = PlugShopifyEmbeddedJWTAuthTest.JWTHelper.api_secret()
       jwt = PlugShopifyEmbeddedJWTAuthTest.JWTHelper.valid_encoded_jwt_payload(:valid_signature)
 
@@ -197,7 +196,6 @@ defmodule PlugShopifyEmbeddedJWTAuthTest do
     end
 
     test "call with `shop_origin_type: :jwt`, and valid JWT headers should run with success and set :ps_jwt_success to true" do
-      api_key = PlugShopifyEmbeddedJWTAuthTest.JWTHelper.api_key()
       api_secret = PlugShopifyEmbeddedJWTAuthTest.JWTHelper.api_secret()
       jwt = PlugShopifyEmbeddedJWTAuthTest.JWTHelper.valid_encoded_jwt_payload(:valid_signature)
 
