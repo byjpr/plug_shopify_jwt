@@ -4,7 +4,7 @@ defmodule PlugShopifyJWT.MixProject do
   def project do
     [
       app: :plug_shopify_jwt,
-      version: "0.1.0",
+      version: "0.1.1",
       elixir: "~> 1.10",
       test_coverage: [tool: ExCoveralls],
       start_permanent: Mix.env() == :prod,

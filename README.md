@@ -31,7 +31,7 @@ The package can be installed by adding `plug_shopify_jwt` to your list of depend
 ```elixir
 def deps do
   [
-    {:plug_shopify_jwt, "~> 0.1.0"}
+    {:plug_shopify_jwt, "~> 0.1.1"}
   ]
 end
 ```
