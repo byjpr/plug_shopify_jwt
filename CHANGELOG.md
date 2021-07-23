@@ -24,8 +24,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - 🔧 Add json_library for Phoenix in dev and test
 - 🚨 Fix linter warnings
 - 🐛 Fix incorrectly formatted tuple
-
-resolved authenticate/2 returning a malformed :error struct
+    resolved authenticate/2 returning a malformed :error struct
 - ✅ Test for empty values passed with "authorization" header
 - ✅ Test for missing authorization header
 - ✅ Test for potential opportunistic MITM attacks
@@ -47,4 +46,3 @@ resolved authenticate/2 returning a malformed :error struct
 - 📌 Add Joken, Update ex_doc
 - ✨ v0.0.0 forked from Enron
 - ✅ Added tests for 0.0.0
-
