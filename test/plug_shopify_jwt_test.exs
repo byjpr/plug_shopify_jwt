@@ -92,7 +92,7 @@ defmodule PlugShopifyEmbeddedJWTAuthTest do
     end
   end
 
-  describe "authentication" do
+  describe "authentication hard failures" do
     test "call with `shop_origin_type` not set should pass conn through and do nothing" do
       init = PlugShopifyEmbeddedJWTAuth.init(secret: "asdnflajsfdnljasdf")
       conn = conn(:get, "/new") |> parse() |> PlugShopifyEmbeddedJWTAuth.call(init)
@@ -163,6 +163,123 @@ defmodule PlugShopifyEmbeddedJWTAuthTest do
       assert conn.halted
       refute Map.has_key?(conn.private, :shopify_jwt_claims)
       refute Map.has_key?(conn.private, :current_shop_name)
+    end
+
+    test "authorization header with missing token should fail" do
+      api_secret = PlugShopifyEmbeddedJWTAuthTest.JWTHelper.api_secret()
+      init = PlugShopifyEmbeddedJWTAuth.init(secret: api_secret)
+
+      conn =
+        conn(:get, "/new")
+        |> parse()
+        |> put_private(:shop_origin_type, :jwt)
+        |> put_req_header(
+          "authorization",
+          "Bearer "
+        )
+        |> PlugShopifyEmbeddedJWTAuth.call(init)
+
+      assert conn.halted
+      refute Map.has_key?(conn.private, :shopify_jwt_claims)
+      refute Map.has_key?(conn.private, :current_shop_name)
+    end
+  end
+
+  describe "authentication soft failures" do
+    test "call with `shop_origin_type` not set should pass conn through and do nothing" do
+      init = PlugShopifyEmbeddedJWTAuth.init(secret: "asdnflajsfdnljasdf", halt_on_error: false)
+      conn = conn(:get, "/new") |> parse() |> PlugShopifyEmbeddedJWTAuth.call(init)
+
+      refute conn.halted
+      refute Map.has_key?(conn.private, :shopify_jwt_claims)
+      refute Map.has_key?(conn.private, :current_shop_name)
+      refute Map.has_key?(conn.private, :ps_jwt_success)
+    end
+
+    test "call with `shop_origin_type: :jwt`, and valid JWT headers should run with success and set :ps_jwt_success to true" do
+      api_key = PlugShopifyEmbeddedJWTAuthTest.JWTHelper.api_key()
+      api_secret = PlugShopifyEmbeddedJWTAuthTest.JWTHelper.api_secret()
+      jwt = PlugShopifyEmbeddedJWTAuthTest.JWTHelper.valid_encoded_jwt_payload(:valid_signature)
+
+      init = PlugShopifyEmbeddedJWTAuth.init(secret: api_secret, halt_on_error: false)
+
+      conn =
+        conn(:get, "/new")
+        |> parse()
+        |> put_private(:shop_origin_type, :jwt)
+        |> put_req_header(
+          "authorization",
+          "Bearer #{jwt}"
+        )
+        |> PlugShopifyEmbeddedJWTAuth.call(init)
+
+      refute conn.halted
+      assert Map.has_key?(conn.private, :shopify_jwt_claims)
+      assert Map.has_key?(conn.private, :current_shop_name)
+      assert conn.private[:ps_jwt_success] == true
+    end
+
+    test "invalid token should set :ps_jwt_success to false" do
+      api_secret = PlugShopifyEmbeddedJWTAuthTest.JWTHelper.api_secret()
+      init = PlugShopifyEmbeddedJWTAuth.init(secret: api_secret, halt_on_error: false)
+
+      conn =
+        conn(:get, "/new")
+        |> parse()
+        |> put_private(:shop_origin_type, :jwt)
+        |> put_req_header(
+          "authorization",
+          "Bearer Q3L8aO4syyVlvXKsr4dqtO3u0yCDvWMX"
+        )
+        |> PlugShopifyEmbeddedJWTAuth.call(init)
+
+      refute conn.halted
+      refute Map.has_key?(conn.private, :shopify_jwt_claims)
+      refute Map.has_key?(conn.private, :current_shop_name)
+      assert conn.private[:ps_jwt_success] == false
+    end
+
+    test "token with mismatched signature should set :ps_jwt_success to false" do
+      api_secret = PlugShopifyEmbeddedJWTAuthTest.JWTHelper.api_secret()
+      init = PlugShopifyEmbeddedJWTAuth.init(secret: api_secret, halt_on_error: false)
+
+      jwt =
+        PlugShopifyEmbeddedJWTAuthTest.JWTHelper.valid_encoded_jwt_payload(:mismatch_signature)
+
+      conn =
+        conn(:get, "/new")
+        |> parse()
+        |> put_private(:shop_origin_type, :jwt)
+        |> put_req_header(
+          "authorization",
+          "Bearer #{jwt}"
+        )
+        |> PlugShopifyEmbeddedJWTAuth.call(init)
+
+      refute conn.halted
+      refute Map.has_key?(conn.private, :shopify_jwt_claims)
+      refute Map.has_key?(conn.private, :current_shop_name)
+      assert conn.private[:ps_jwt_success] == false
+    end
+
+    test "authorization header with missing token should set :ps_jwt_success to false" do
+      api_secret = PlugShopifyEmbeddedJWTAuthTest.JWTHelper.api_secret()
+      init = PlugShopifyEmbeddedJWTAuth.init(secret: api_secret, halt_on_error: false)
+
+      conn =
+        conn(:get, "/new")
+        |> parse()
+        |> put_private(:shop_origin_type, :jwt)
+        |> put_req_header(
+          "authorization",
+          "Bearer "
+        )
+        |> PlugShopifyEmbeddedJWTAuth.call(init)
+
+      refute conn.halted
+      refute Map.has_key?(conn.private, :shopify_jwt_claims)
+      refute Map.has_key?(conn.private, :current_shop_name)
+      assert conn.private[:ps_jwt_success] == false
     end
   end
 end
