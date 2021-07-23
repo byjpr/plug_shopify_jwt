@@ -182,6 +182,44 @@ defmodule PlugShopifyEmbeddedJWTAuthTest do
       refute Map.has_key?(conn.private, :shopify_jwt_claims)
       refute Map.has_key?(conn.private, :current_shop_name)
     end
+
+    test "authorization header with empty value" do
+      api_secret = PlugShopifyEmbeddedJWTAuthTest.JWTHelper.api_secret()
+      init = PlugShopifyEmbeddedJWTAuth.init(secret: api_secret)
+
+      conn =
+        conn(:get, "/new")
+        |> parse()
+        |> put_private(:shop_origin_type, :jwt)
+        |> put_req_header(
+          "authorization",
+          ""
+        )
+        |> PlugShopifyEmbeddedJWTAuth.call(init)
+
+      assert conn.halted
+      refute Map.has_key?(conn.private, :shopify_jwt_claims)
+      refute Map.has_key?(conn.private, :current_shop_name)
+    end
+
+    test "authorization header with single space as value" do
+      api_secret = PlugShopifyEmbeddedJWTAuthTest.JWTHelper.api_secret()
+      init = PlugShopifyEmbeddedJWTAuth.init(secret: api_secret)
+
+      conn =
+        conn(:get, "/new")
+        |> parse()
+        |> put_private(:shop_origin_type, :jwt)
+        |> put_req_header(
+          "authorization",
+          " "
+        )
+        |> PlugShopifyEmbeddedJWTAuth.call(init)
+
+      assert conn.halted
+      refute Map.has_key?(conn.private, :shopify_jwt_claims)
+      refute Map.has_key?(conn.private, :current_shop_name)
+    end
   end
 
   describe "authentication soft failures" do
@@ -271,6 +309,46 @@ defmodule PlugShopifyEmbeddedJWTAuthTest do
         |> put_req_header(
           "authorization",
           "Bearer "
+        )
+        |> PlugShopifyEmbeddedJWTAuth.call(init)
+
+      refute conn.halted
+      refute Map.has_key?(conn.private, :shopify_jwt_claims)
+      refute Map.has_key?(conn.private, :current_shop_name)
+      assert conn.private[:ps_jwt_success] == false
+    end
+
+    test "authorization header with empty value should set :ps_jwt_success to false" do
+      api_secret = PlugShopifyEmbeddedJWTAuthTest.JWTHelper.api_secret()
+      init = PlugShopifyEmbeddedJWTAuth.init(secret: api_secret, halt_on_error: false)
+
+      conn =
+        conn(:get, "/new")
+        |> parse()
+        |> put_private(:shop_origin_type, :jwt)
+        |> put_req_header(
+          "authorization",
+          ""
+        )
+        |> PlugShopifyEmbeddedJWTAuth.call(init)
+
+      refute conn.halted
+      refute Map.has_key?(conn.private, :shopify_jwt_claims)
+      refute Map.has_key?(conn.private, :current_shop_name)
+      assert conn.private[:ps_jwt_success] == false
+    end
+
+    test "authorization header with single space as value should set :ps_jwt_success to false" do
+      api_secret = PlugShopifyEmbeddedJWTAuthTest.JWTHelper.api_secret()
+      init = PlugShopifyEmbeddedJWTAuth.init(secret: api_secret, halt_on_error: false)
+
+      conn =
+        conn(:get, "/new")
+        |> parse()
+        |> put_private(:shop_origin_type, :jwt)
+        |> put_req_header(
+          "authorization",
+          " "
         )
         |> PlugShopifyEmbeddedJWTAuth.call(init)
 
