@@ -45,11 +45,11 @@ defmodule PlugShopifyEmbeddedJWTAuth do
   end
 
   defp authenticate({conn, _}, opts) do
-    {:error, conn, %{message: "Missing authenticate header"}, opts.halt_on_error}
+    {:error, %{message: "Missing authenticate header"}, conn, opts}
   end
 
   defp authenticate(conn, opts) do
-    {:error, conn, %{message: "Missing authenticate header"}, opts.halt_on_error}
+    {:error, %{message: "Missing authenticate header"}, conn, opts}
   end
 
   defp get_auth_header(conn) do
