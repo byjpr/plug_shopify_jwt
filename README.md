@@ -4,6 +4,10 @@
 [![Coverage Status](https://coveralls.io/repos/github/byjpr/plug_shopify_jwt/badge.svg?branch=main)](https://coveralls.io/github/byjpr/plug_shopify_jwt?branch=main)
 [![Libraries.io for releases](https://img.shields.io/librariesio/release/github/byjpr/plug_shopify_jwt.svg?style=flat-square)](https://libraries.io/github/byjpr/plug_shopify_jwt)
 
+This plug validates Shopify JWT - also known as session token authentication. Session tokens/JWT are a replacement for cookie based authentication in embedded apps.
+
+PlugShopifyJwt is architected to support Session tokens whilst allowing you to verify with URL parameters (validation of URL parameters is not included in this plug) should you decide.
+
 ## Setup
 
 ### Usage
