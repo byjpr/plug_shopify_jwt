@@ -44,6 +44,7 @@ defmodule PlugShopifyJWT.MixProject do
       {:jason, "~> 1.2"},
       {:plug_cowboy, "~> 2.0"},
       {:timex, "~> 3.7"},
+      {:git_cli, "~> 0.3", only: :dev, runtime: false},
       {:versioce, "~> 1.1.1", only: :dev, runtime: false},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
       {:excoveralls, "~> 0.10", only: :test, runtime: false},
