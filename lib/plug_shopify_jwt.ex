@@ -12,6 +12,7 @@ defmodule PlugShopifyEmbeddedJWTAuth do
 
     ```elixir
       pipeline :embedded do
+        plug PlugShopifyEmbeddedJWTAuth.OriginJWT # when you're not using another plug to set `shop_origin_type` to `jwt`
         plug PlugShopifyEmbeddedJWTAuth, [secret: "224e5146-4f1e-4a1d-a64a-2732df659542"]
       end
 
@@ -59,6 +60,7 @@ defmodule PlugShopifyEmbeddedJWTAuth do
   ### Usage:
     ```elixir
       pipeline :embedded do
+        plug PlugShopifyEmbeddedJWTAuth.OriginJWT # when you're not using another plug to set `shop_origin_type` to `jwt`
         plug PlugShopifyEmbeddedJWTAuth, [secret: "224e5146-4f1e-4a1d-a64a-2732df659542"]
       end
 
